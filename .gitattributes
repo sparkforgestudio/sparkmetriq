@@ -1,2 +1,6 @@
-# Auto detect text files and perform LF normalization
+# Normalize line endings
 * text=auto
+
+# Mark documentation files as linguist documentation
+docs/* linguist-documentation
+*.md linguist-documentation

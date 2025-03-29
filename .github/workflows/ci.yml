@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x] # Vous pouvez ajouter plus de versions de Node.js si nécessaire
+
+    steps:
+      # Checkout du dépôt
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # Setup Node.js avec la version spécifiée
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      # Cache des dépendances Node.js (accélère le processus d'installation)
+      - name: Cache Node.js modules
+        uses: actions/cache@v3
+        with:
+          path: ~/.pnpm-store
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
+      # Affichage de la version de Node.js et pnpm pour débogage
+      - name: Check Node.js version
+        run: |
+          node -v
+          pnpm -v
+
+      # Installer les dépendances avec pnpm
+      - name: Install dependencies
+        run: |
+          npm install -g pnpm
+          pnpm install
+
+      # Linting du code
+      - name: Lint
+        run: pnpm run lint
+
+      # Tests du projet
+      - name: Test
+        run: pnpm run test
+
+      # Construction du projet
+      - name: Build
+        run: pnpm run build
