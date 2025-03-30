@@ -46,6 +46,8 @@ musai-musemgmt-platform/
 - Monorepo (Lerna / Nx possible)
 - GitHub Flow
 
+![CI](https://github.com/sparkforgestudio/musai-musemgmt-platform/actions/workflows/ci.yml/badge.svg)
+
 ---
 
 > ⚠️ Ceci est un projet privé et confidentiel sous licence propriétaire.
