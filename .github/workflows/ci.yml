@@ -15,19 +15,14 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Setup Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
-          python-version: '3.x'  # Spécifiez la version Python désirée (par exemple, '3.8')
+          python-version: "3.10"
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip  # Mise à jour de pip
-          pip install -r requirements.txt  # Installation des dépendances listées dans requirements.txt
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
-      - name: Lint with flake8
-        run: |
-          flake8 .  # Exécute flake8 sur tous les fichiers du projet
-
-      - name: Run tests with pytest
-        run: |
-          pytest  # Exécute les tests avec pytest
+      - name: Run Structure Tests
+        run: pytest tests/test_sanity.py

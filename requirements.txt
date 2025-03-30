@@ -1,20 +1,5 @@
-# Flask framework for web applications
 flask
-
-# Flask extension for handling CORS (Cross-Origin Resource Sharing)
 flask-cors
-
-# Python Dotenv for environment variable management
 python-dotenv
-
-# HTTP library for making requests
 requests
-
-# Python Telegram Bot library for creating Telegram bots
 python-telegram-bot
-
-# Code linting tool
-flake8
-
-# Testing framework
-pytest
