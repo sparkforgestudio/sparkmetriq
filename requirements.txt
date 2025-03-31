@@ -3,3 +3,4 @@ flask-cors
 python-dotenv
 requests
 python-telegram-bot
+pytest  # <-- Ajout de pytest
