@@ -1,15 +1,7 @@
 {
-  "name": "musai-musemgmt-platform",
-  "version": "1.0.0",
   "scripts": {
-    "lint": "eslint .",
-    "test": "jest",
-    "build": "tsc"
-  },
-  "dependencies": {},
-  "devDependencies": {
-    "eslint": "^8.0.0",
-    "jest": "^27.0.0",
-    "typescript": "^4.0.0"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
   }
 }

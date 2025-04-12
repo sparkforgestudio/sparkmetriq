@@ -1,0 +1,18 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Launch API (FastAPI)",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/venv/Scripts/uvicorn.exe",
+      "args": [
+        "api.main:app",
+        "--reload",
+        "--port", "8000"]
+      ,
+      "console": "integratedTerminal",
+      "envFile": "${workspaceFolder}/.env"
+    }
+  ]
+}

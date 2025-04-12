@@ -1,4 +1,6 @@
 import os
+from api.services.content_distributor.dispatcher import dispatch_content
+
 
 def test_project_structure():
     required_dirs = [

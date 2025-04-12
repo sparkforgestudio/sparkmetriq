@@ -1,0 +1,65 @@
+# musai-musemgmt-platform systemd
+
+# 1. Fichier de service pour FastAPI (fastapi-backend.service)
+cat > /etc/systemd/system/fastapi-backend.service <<EOL
+[Unit]
+Description=FastAPI Backend for Musai
+After=network.target
+
+[Service]
+User=ubuntu
+WorkingDirectory=/home/ubuntu/musai-musemgmt-platform
+ExecStart=/home/ubuntu/musai-musemgmt-platform/venv/bin/uvicorn api.main:app --host 0.0.0.0 --port 8000
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+EOL
+
+# 2. Fichier de service pour Scheduler (musai-scheduler.service)
+cat > /etc/systemd/system/musai-scheduler.service <<EOL
+[Unit]
+Description=Musai Content Scheduler
+After=network.target
+
+[Service]
+User=ubuntu
+WorkingDirectory=/home/ubuntu/musai-musemgmt-platform
+ExecStart=/home/ubuntu/musai-musemgmt-platform/venv/bin/python scripts/scheduler.py
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+EOL
+
+# 3. Fichier de service pour Admin Panel (admin-panel.service)
+cat > /etc/systemd/system/admin-panel.service <<EOL
+[Unit]
+Description=Admin Panel (Next.js)
+After=network.target
+
+[Service]
+User=ubuntu
+WorkingDirectory=/home/ubuntu/musai-musemgmt-platform/frontend/admin_panel
+ExecStart=/usr/bin/pnpm dev
+Restart=always
+Environment=NODE_ENV=development
+
+[Install]
+WantedBy=multi-user.target
+EOL
+
+# 4. Commandes pour activer les services
+sudo systemctl daemon-reexec
+sudo systemctl daemon-reload
+sudo systemctl enable fastapi-backend.service
+sudo systemctl enable musai-scheduler.service
+sudo systemctl enable admin-panel.service
+
+# 5. Commandes pour les lancer
+sudo systemctl start fastapi-backend.service
+sudo systemctl start musai-scheduler.service
+sudo systemctl start admin-panel.service
+
+# 6. Vérifier l'état d'un service
+# sudo systemctl status fastapi-backend.service
