@@ -1,3 +1,30 @@
+# Python
 __pycache__/
+*.py[cod]
+*.so
+
+# Environnements virtuels et configurations
 .env
+env/
+venv/
+
+# Logs
 *.log
+
+# Node.js et dépendances
+node_modules/
+yarn-error.log
+.pnp.*
+
+# Next.js / Frontend
+.next/
+out/
+.cache/
+
+# IDEs et éditeurs
+.vscode/
+.idea/
+
+# Fichiers système
+.DS_Store
+Thumbs.db
