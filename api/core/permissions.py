@@ -3,9 +3,10 @@
 Système RBAC minimal pour la gestion des talents.
 """
 
-from fastapi import HTTPException, status
-from typing import Iterable, List, Optional
-from api.schemas.users import UserResponse
+from fastapi import HTTPException, status, Depends
+from typing import Iterable, List, Optional, Callable
+from api.schemas.users import UserResponse, UserRole
+from api.core.auth import get_current_user
 
 def require_role(current_user: UserResponse, roles: Iterable[str]):
     """Vérifie que l'utilisateur a au moins un des rôles requis."""
@@ -22,6 +23,40 @@ def require_role(current_user: UserResponse, roles: Iterable[str]):
             status_code=status.HTTP_403_FORBIDDEN, 
             detail=f"Insufficient role. Required: {list(roles)}, User has: {list(user_roles)}"
         )
+
+
+def has_role(required_role: UserRole) -> Callable:
+    """
+    Crée une dépendance FastAPI qui vérifie que l'utilisateur a le rôle requis.
+    
+    Args:
+        required_role: Le rôle requis (UserRole enum)
+        
+    Returns:
+        Fonction de dépendance FastAPI qui retourne l'utilisateur si le rôle est valide,
+        ou lève une HTTPException 403 sinon.
+    """
+    async def role_checker(current_user: UserResponse = Depends(get_current_user)) -> UserResponse:
+        # Si l'utilisateur est admin, il a tous les droits
+        if getattr(current_user, "is_admin", False):
+            return current_user
+        
+        # Récupérer les rôles de l'utilisateur
+        user_roles = getattr(current_user, "roles", []) or []
+        
+        # Convertir les rôles en strings pour comparaison
+        user_role_strings = [role.value if isinstance(role, UserRole) else str(role) for role in user_roles]
+        
+        # Vérifier si l'utilisateur a le rôle requis
+        if required_role.value not in user_role_strings:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Insufficient role. Required: {required_role.value}, User has: {user_role_strings}"
+            )
+        
+        return current_user
+    
+    return role_checker
 
 def require_admin(current_user: UserResponse):
     """Vérifie que l'utilisateur est admin."""
