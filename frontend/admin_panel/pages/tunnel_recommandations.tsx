@@ -2,12 +2,12 @@ import React from 'react';
 import useSWR from 'swr';
 import axios from 'axios';
 
-// Fonction fetcher utilisée par SWR pour récupérer les données de l'API
+// Fonction fetcher utilisée par SWR pour récupérer les données de l'API.
 const fetcher = (url: string) => axios.get(url).then((res) => res.data);
 
 const TunnelRecommendations: React.FC = () => {
-  // Supposons que l'endpoint d'analyse avec recommandations soit /api/analysis/tunnel
-  const { data, error } = useSWR('/api/analysis/tunnel?days=30&granularity=daily', fetcher);
+  // On précise que data est un tableau d'objets any.
+  const { data, error } = useSWR<any[]>('/api/analysis/tunnel?days=30&granularity=daily', fetcher);
 
   if (error) return <div>Erreur lors du chargement des recommandations.</div>;
   if (!data) return <div>Chargement...</div>;
@@ -23,7 +23,7 @@ const TunnelRecommendations: React.FC = () => {
           <div className="mt-2">
             <h3 className="font-medium">Analyse du Tunnel :</h3>
             <ul className="list-disc ml-6">
-              {item.funnel.map((stage: any, idx: number) => (
+              {item.funnel?.map((stage: any, idx: number) => (
                 <li key={idx}>
                   {stage.stage} : {stage.posts} posts, {stage.conversions} conversions, taux de conversion: {parseFloat(stage.conversion_rate).toFixed(2)}%
                 </li>
@@ -33,7 +33,7 @@ const TunnelRecommendations: React.FC = () => {
           <div className="mt-2">
             <h3 className="font-medium">Recommandations :</h3>
             <ul className="list-disc ml-6">
-              {item.recommendations.map((rec: string, recIdx: number) => (
+              {item.recommendations?.map((rec: string, recIdx: number) => (
                 <li key={recIdx}>{rec}</li>
               ))}
             </ul>

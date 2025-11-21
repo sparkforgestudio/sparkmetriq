@@ -2,8 +2,8 @@ from fastapi import APIRouter, Depends, Query
 from fastapi.responses import StreamingResponse
 from io import StringIO
 import csv
-from services.databases import db
-from core.auths import is_admin
+from api.databases.databases import db
+from api.core.auth import is_admin
 from datetime import datetime
 from typing import Literal
 from bson import ObjectId
@@ -50,7 +50,7 @@ async def export_stats_csv(
         writer.writerow(row)
 
     # Format du nom de fichier
-    filename = f"{entity}_stats_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.csv"
+    filename = f"{entity}_stats_{utcnow().strftime('%Y%m%d_%H%M%S')}.csv"
 
     return StreamingResponse(
         iter([buffer.getvalue()]),

@@ -1,20 +1,31 @@
+# api/services/scheduler/logger.py
+
 import logging
-from pathlib import Path
-from services.logger.telegram_handler import TelegramLogHandler
+from datetime import datetime
+from logs.telegram_handler import TelegramLogHandler
 
-
-# Créer un dossier de logs s’il n’existe pas
-Path("logs").mkdir(exist_ok=True)
-
-scheduler_logger = logging.getLogger("scheduler_logger")
+# Logger dédié au scheduler
+scheduler_logger = logging.getLogger("scheduler")
 scheduler_logger.setLevel(logging.INFO)
 
-file_handler = logging.FileHandler("logs/scheduler.log", encoding="utf-8")
-formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
-file_handler.setFormatter(formatter)
+# Si aucun handler n'est configuré, on ajoute le handler Telegram
+if not scheduler_logger.handlers:
+    handler = TelegramLogHandler()
+    formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+    handler.setFormatter(formatter)
+    scheduler_logger.addHandler(handler)
 
-scheduler_logger.addHandler(file_handler)
-telegram_handler = TelegramLogHandler()
-telegram_handler.setLevel(logging.INFO)
-telegram_handler.setFormatter(formatter)
-logger.addHandler(telegram_handler)
+def log_scheduler_event(message: str, level: str = "info") -> None:
+    """
+    Journalise un événement du scheduler via Telegram.
+    """
+    timestamp = utcnow().isoformat()
+    log_msg = f"{timestamp} - {message}"
+    if level.lower() == "info":
+        scheduler_logger.info(log_msg)
+    elif level.lower() == "warning":
+        scheduler_logger.warning(log_msg)
+    elif level.lower() == "error":
+        scheduler_logger.error(log_msg)
+    else:
+        scheduler_logger.debug(log_msg)

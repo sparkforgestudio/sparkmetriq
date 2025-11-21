@@ -1,49 +1,80 @@
-from fastapi import APIRouter, Query, Depends
+# api/routes/stats/tunnels.py
+
+from fastapi import APIRouter, Query
+from datetime import datetime
 from typing import Optional, List
-from api.stats.tunnels import get_tunnel_overview, get_tunnel_details, fetch_csv_data
-from fastapi.responses import StreamingResponse
-from io import StringIO
-from core.auths import get_current_user
+from api.services.analytics.tunnels import (
+    get_tunnel_overview,
+    get_tunnel_details,
+    fetch_csv_data,
+    # ou analyse_tunnel aliasé selon votre module
+)
 
-router = APIRouter()
+router = APIRouter(prefix="/stats/tunnel", tags=["stats"])
 
-# GET /api/stats/tunnels/overview
+
 @router.get("/overview")
 async def tunnel_overview(
     agency_id: Optional[str] = Query(None),
     muse_id: Optional[str] = Query(None),
-    period: Optional[str] = Query("30d"),
-    current_user=Depends(get_current_user)
-):
-    return await get_tunnel_overview(agency_id, muse_id, period)
+    platform: Optional[str] = Query(None),
+    funnel_stage: Optional[str] = Query(None),
+    content_type: Optional[str] = Query(None),
+    start_date: Optional[datetime] = Query(None),
+    end_date: Optional[datetime] = Query(None),
+    granularity: str = Query("daily"),
+) -> List[dict]:
+    return await get_tunnel_overview(
+        agency_id=agency_id,
+        muse_id=muse_id,
+        platform=platform,
+        funnel_stage=funnel_stage,
+        content_type=content_type,
+        start_date=start_date,
+        end_date=end_date,
+        granularity=granularity,
+    )
 
 
-# GET /api/stats/tunnels/details
 @router.get("/details")
 async def tunnel_details(
     agency_id: Optional[str] = Query(None),
     muse_id: Optional[str] = Query(None),
     platform: Optional[str] = Query(None),
-    status: Optional[str] = Query(None),
-    start_date: Optional[str] = Query(None),
-    end_date: Optional[str] = Query(None),
-    current_user=Depends(get_current_user)
-):
-    return await get_tunnel_details(agency_id, muse_id, platform, status, start_date, end_date)
+    funnel_stage: Optional[str] = Query(None),
+    content_type: Optional[str] = Query(None),
+    start_date: Optional[datetime] = Query(None),
+    end_date: Optional[datetime] = Query(None),
+) -> List[dict]:
+    return await get_tunnel_details(
+        agency_id=agency_id,
+        muse_id=muse_id,
+        platform=platform,
+        funnel_stage=funnel_stage,
+        content_type=content_type,
+        start_date=start_date,
+        end_date=end_date,
+    )
 
 
-# GET /api/stats/tunnels/export
 @router.get("/export")
-async def export_tunnel_data(
+async def export_tunnel_csv(
     agency_id: Optional[str] = Query(None),
     muse_id: Optional[str] = Query(None),
     platform: Optional[str] = Query(None),
-    status: Optional[str] = Query(None),
-    start_date: Optional[str] = Query(None),
-    end_date: Optional[str] = Query(None),
-    current_user=Depends(get_current_user)
+    funnel_stage: Optional[str] = Query(None),
+    content_type: Optional[str] = Query(None),
+    start_date: Optional[datetime] = Query(None),
+    end_date: Optional[datetime] = Query(None),
 ):
-    csv_content = await fetch_csv_data(agency_id, muse_id, platform, status, start_date, end_date)
-    response = StreamingResponse(StringIO(csv_content), media_type="text/csv")
-    response.headers["Content-Disposition"] = "attachment; filename=tunnel_export.csv"
-    return response
+    records = await fetch_csv_data(
+        agency_id=agency_id,
+        muse_id=muse_id,
+        platform=platform,
+        funnel_stage=funnel_stage,
+        content_type=content_type,
+        start_date=start_date,
+        end_date=end_date,
+    )
+    # Ici vous pouvez transformer `records` en CSV ou renvoyer directement la liste
+    return records

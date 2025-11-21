@@ -1,67 +1,123 @@
-import requests
-import logging
-from api.schemas.payload_schema import PublicContentPayload
-from services.content_distributor.logger import logger
+import os
+import httpx
+from typing import Dict, Any, Optional
+from api.services.content_distributor.logger import logger, log_step, log_platform_event
 
-logger = logging.getLogger(__name__)
+# Charger les variables d'environnement Reddit
+REDDIT_CLIENT_ID: str = os.getenv("REDDIT_CLIENT_ID", "")
+REDDIT_CLIENT_SECRET: str = os.getenv("REDDIT_CLIENT_SECRET", "")
+REDDIT_USERNAME: str = os.getenv("REDDIT_USERNAME", "")
+REDDIT_PASSWORD: str = os.getenv("REDDIT_PASSWORD", "")
+REDDIT_USER_AGENT: str = os.getenv("REDDIT_USER_AGENT", "content-distributor-bot/0.1")
+
+OAUTH_URL = "https://www.reddit.com/api/v1/access_token"
+SUBMIT_URL = "https://oauth.reddit.com/api/submit"
 
 class RedditConnector:
-    def __init__(self, client_id: str, client_secret: str, username: str, password: str, user_agent: str):
-        self.client_id = client_id
-        self.client_secret = client_secret
-        self.username = username
-        self.password = password
-        self.user_agent = user_agent
-        self.access_token = self._authenticate()
+    def __init__(self) -> None:
+        self.client_id = REDDIT_CLIENT_ID
+        self.client_secret = REDDIT_CLIENT_SECRET
+        self.username = REDDIT_USERNAME
+        self.password = REDDIT_PASSWORD
+        self.user_agent = REDDIT_USER_AGENT
+        self.access_token: Optional[str] = None
 
-    def _authenticate(self):
-        auth = requests.auth.HTTPBasicAuth(self.client_id, self.client_secret)
+    async def authenticate(self) -> str:
+        """
+        Obtient un jeton d'accès OAuth2 via grant_type=password.
+        """
+        auth = (self.client_id, self.client_secret)
         data = {
-            'grant_type': 'password',
-            'username': self.username,
-            'password': self.password
+            "grant_type": "password",
+            "username": self.username,
+            "password": self.password
         }
-        headers = {'User-Agent': self.user_agent}
+        headers = {"User-Agent": self.user_agent}
+        async with httpx.AsyncClient() as client:
+            resp = await client.post(OAUTH_URL, auth=auth, data=data, headers=headers)
+            resp.raise_for_status()
+            token = resp.json().get("access_token")
+            self.access_token = token
+            return token  # type: ignore
 
-        response = requests.post("https://www.reddit.com/api/v1/access_token", auth=auth, data=data, headers=headers)
-        if response.status_code == 200:
-            return response.json()["access_token"]
-        else:
-            logger.error(f"Reddit auth failed: {response.text}")
-            return None
-
-    def publish(self, payload: PublicContentPayload):
-        if not self.access_token:
-            raise ValueError("Authentication to Reddit failed")
-
+    async def submit_post(
+        self,
+        sr: str,
+        title: str,
+        kind: str,
+        media_url: Optional[str] = None,
+        text: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Soumet un post sur Reddit (self ou link post).
+        """
         headers = {
             "Authorization": f"bearer {self.access_token}",
             "User-Agent": self.user_agent
         }
+        payload: Dict[str, Any] = {"sr": sr, "title": title, "kind": kind}
+        if media_url:
+            payload["url"] = media_url
+        if text and kind == "self":
+            payload["text"] = text
+        async with httpx.AsyncClient() as client:
+            resp = await client.post(SUBMIT_URL, headers=headers, data=payload)
+            resp.raise_for_status()
+            return resp.json()
 
-        post_data = {
-            "sr": payload.muse_id,  # Nom du subreddit
-            "title": payload.caption or "New Post",
-            "kind": "link" if payload.type in ["image", "video"] else "self",
-        }
+@log_step
+async def publish_to_reddit(content: Dict[str, Any], model_info: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Publie du contenu sur Reddit et journalise l'événement.
+    """
+    connector = RedditConnector()
+    agency_id = model_info.get("agency_id", "")
+    muse_id = model_info.get("muse_id", "")
+    content_id = content.get("id", "")
+    sr = content.get("platform") or muse_id
+    title = content.get("text") or content.get("caption", "")
+    media_list = content.get("media", [])
 
-        # Reddit ne supporte pas directement les carrousels, stories ou shorts
-        if payload.type in ["image", "video"] and payload.media:
-            post_data["url"] = payload.media[0].url
-        elif payload.type == "text":
-            post_data["text"] = payload.caption or ""
+    try:
+        if not connector.access_token:
+            await connector.authenticate()
+
+        kind = "self"
+        media_url = None
+        text_body = None
+        if media_list:
+            media_url = media_list[0].get("url")
+            kind = "link"
         else:
-            raise NotImplementedError(f"RedditConnector: Unsupported type {payload.type}")
+            text_body = title
 
-        res = requests.post("https://oauth.reddit.com/api/submit", headers=headers, data=post_data)
+        response = await connector.submit_post(
+            sr=sr,
+            title=title,
+            kind=kind,
+            media_url=media_url,
+            text=text_body
+        )
 
-        if res.status_code != 200:
-            logger.error(f"Failed to publish to Reddit: {res.text}")
-            return {"status": "error", "detail": res.text}
-
-        return {"status": "success", "response": res.json()}
-
-
-async def publish_to_reddit(content, model_info):
-    # implémentation réelle ici
-    pass
+        await log_platform_event(
+            platform="reddit",
+            agency_id=agency_id,
+            muse_id=muse_id,
+            content_id=content_id,
+            status="success",
+            message="Publication réussie sur Reddit",
+            metadata={"response": response}
+        )
+        return {"status": "success", "data": response}
+    except Exception as e:
+        await log_platform_event(
+            platform="reddit",
+            agency_id=agency_id,
+            muse_id=muse_id,
+            content_id=content_id,
+            status="error",
+            message=str(e),
+            metadata={}
+        )
+        logger.error(f"Erreur publish_to_reddit: {e}")
+        return {"status": "error", "reason": str(e)}

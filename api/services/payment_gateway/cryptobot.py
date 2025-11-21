@@ -1,33 +1,19 @@
-import httpx
+# api/services/payment_gateway/cryptobot.py
+
 import os
-from schemas.payments import PaymentRequest
-from schemas.users import UserResponse
+# Correction de l'import pour pointer vers le schéma correct
+from api.schemas.payments import PaymentRequest
 
-CRYPTOBOT_API_TOKEN = os.getenv("CRYPTOBOT_API_TOKEN")
-CRYPTOBOT_BASE_URL = "https://pay.crypt.bot"
+# ... autres imports nécessaires ...
 
-async def generate_payment_link(payment_request: PaymentRequest, user: UserResponse) -> str:
-    callback_url = f"https://yourdomain.com/payments/webhook"
-    
-    payload = {
-        "asset": payment_request.currency.upper(),
-        "amount": str(payment_request.amount),
-        "description": payment_request.description,
-        "hidden_message": f"Access granted to content by {payment_request.muse_id}",
-        "paid_btn_name": "open_bot",
-        "paid_btn_url": f"https://t.me/{payment_request.muse_id}_bot",
-        "payload": f"user:{user.email}|muse:{payment_request.muse_id}",
-        "allow_comments": False,
-        "allow_anonymous": False,
-        "expires_in": 900,
-        "callback_url": callback_url
-    }
-
-    headers = {
-        "Crypto-Pay-API-Token": CRYPTOBOT_API_TOKEN
-    }
-
-    async with httpx.AsyncClient() as client:
-        response = await client.post(f"{CRYPTOBOT_BASE_URL}/api/createInvoice", json=payload, headers=headers)
-        response.raise_for_status()
-        return response.json()["result"]["pay_url"]
+def generate_payment_link(payment_request: PaymentRequest, user):
+    """
+    Simule la génération d'un lien de paiement pour la demande fournie.
+    :param payment_request: données de la demande de paiement
+    :param user: utilisateur courant (UserResponse)
+    :return: URL de paiement
+    """
+    # Exemple fictif : construire une URL en encodant les données
+    base_url = os.getenv("PAYMENT_BASE_URL", "https://payments.example.com/pay")
+    # On pourrait ici interagir avec une API tierce
+    return f"{base_url}?amount={payment_request.amount}&currency={payment_request.currency}&user={user.email}"

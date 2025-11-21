@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from services.databases import db
+from api.databases.databases import db
 from typing import Optional, List, Dict
 from bson.son import SON
 
@@ -10,8 +10,8 @@ async def generate_timeline_stats(
     end_date: Optional[datetime]
 ) -> List[Dict]:
 
-    start = start_date or (datetime.utcnow() - timedelta(days=30))
-    end = end_date or datetime.utcnow()
+    start = start_date or (utcnow() - timedelta(days=30))
+    end = end_date or utcnow()
 
     match_stage = {
         "created_at": {"$gte": start, "$lte": end}

@@ -1,0 +1,47 @@
+# requirements-ai-marketing.txt
+"""
+Dépendances pour le module IA Marketing & Business Multi-plateformes.
+"""
+
+# IA et Machine Learning
+openai>=1.0.0
+sentence-transformers>=2.2.0
+faiss-cpu>=1.7.4
+numpy>=1.24.0
+scikit-learn>=1.3.0
+
+# Traitement de données
+pandas>=2.0.0
+nltk>=3.8.0
+spacy>=3.6.0
+
+# Vector stores alternatifs (optionnels)
+# weaviate-client>=3.20.0
+# qdrant-client>=1.6.0
+
+# APIs et scraping
+httpx>=0.24.0
+aiohttp>=3.8.0
+beautifulsoup4>=4.12.0
+
+# Base de données et stockage
+pymongo>=4.5.0
+redis>=4.6.0
+
+# Utilitaires
+python-dotenv>=1.0.0
+pydantic>=2.0.0
+fastapi>=0.100.0
+uvicorn>=0.23.0
+
+# Logging et monitoring
+structlog>=23.1.0
+prometheus-client>=0.17.0
+
+# Tests
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+pytest-mock>=3.11.0
+
+
+

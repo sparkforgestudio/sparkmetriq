@@ -2,7 +2,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 import jwt
 from core.security import SECRET_KEY, ALGORITHM
-from services.database import db
+from api.databases.databases import db
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login")
 

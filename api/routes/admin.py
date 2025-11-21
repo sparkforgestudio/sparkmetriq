@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 from core.dependencies import is_admin
-from services.database import db
+from api.databases.databases import db
 
 router = APIRouter()
 

@@ -1,16 +1,25 @@
 from typing import List, Dict
-from services.content_distributor.connectors.instagram import publish_to_instagram
-from services.content_distributor.connectors.tiktok import publish_to_tiktok
-from services.content_distributor.connectors.threads import publish_to_threads
-from services.content_distributor.connectors.snapchat import publish_to_snapchat
-from services.content_distributor.connectors.reddit import publish_to_reddit
-from services.content_distributor.connectors.twitter import publish_to_twitter
-from services.content_distributor.connectors.telegram import publish_to_telegram
-from services.content_distributor.connectors.facebook import publish_to_facebook
-from services.content_distributor.connectors.onlyfans import publish_to_onlyfans
+from .connectors.instagram import publish_to_instagram
+from .connectors.tiktok import publish_to_tiktok
+from .connectors.threads import publish_to_threads
+from .connectors.snapchat import publish_to_snapchat
+from .connectors.reddit import publish_to_reddit
+from .connectors.twitter import publish_to_twitter
+from .connectors.telegram import publish_to_telegram
+from .connectors.facebook import publish_to_facebook
+from .connectors.onlyfans import publish_to_onlyfans
+from .connectors.fanvue import publish_to_fanvue
+from .connectors.fansly import publish_to_fansly
+from .connectors.loyalfans import publish_to_loyalfans
+from .connectors.whatsapp import publish_to_whatsapp
+from .connectors.patreon import publish_to_patreon
+from .connectors.discord import publish_to_discord
+from .connectors.mymfans import publish_to_mymfans
+from .connectors.manyvids import publish_to_manyvids
 
-from services.content_distributor.logger import logger, log_step
-from services.config.funnel_config import get_config
+from .logger import logger, log_step
+from ..config.funnel_config import get_config
+
 
 class ContentDispatcher:
     async def dispatch(self, platform: str, content: dict, agency_id: str, muse_id: str = None) -> None:
@@ -18,7 +27,7 @@ class ContentDispatcher:
         Détermine le funnel_stage en se basant sur la configuration dynamique et
         effectue l'envoi du contenu vers la plateforme spécifiée.
 
-        :param platform: Nom de la plateforme (e.g., "instagram", "tiktok", etc.)
+        :param platform: Nom de la plateforme (ex.: "instagram", "tiktok", etc.).
         :param content: Dictionnaire contenant les données du contenu.
         :param agency_id: Identifiant de l'agence.
         :param muse_id: (Optionnel) Identifiant de la muse.
@@ -35,23 +44,30 @@ class ContentDispatcher:
                 stage = "non spécifié"
         else:
             stage = "non spécifié"
-        
-        # Insérer le résultat dans le contenu à dispatcher
+
+        # Insérer le funnel_stage dans le contenu à dispatcher
         content["funnel_stage"] = stage
         logger.info(f"Dispatching on {platform} with funnel_stage '{stage}'")
         await self.send_to_platform(platform, content)
-    
+
     async def send_to_platform(self, platform: str, content: dict) -> None:
         """
-        Envoie le contenu vers la plateforme spécifiée. La logique réelle d'envoi devra
-        être adaptée à chaque connecteur.
-
+        Envoie le contenu vers la plateforme spécifiée.
+        Cette méthode doit être adaptée pour réaliser l'envoi effectif via l'API du connecteur.
+        
         :param platform: Nom de la plateforme.
-        :param content: Données du contenu incluant le funnel_stage.
+        :param content: Dictionnaire contenant le contenu, y compris le funnel_stage.
         """
-        # Exemple d'appel générique ; à remplacer par la logique concrète pour chaque plateforme.
         print(f"Envoi de contenu vers {platform} avec le stage {content.get('funnel_stage')}")
-        # Ici, implémentez la logique réelle ou effectuez une redirection vers un autre service.
+        # Implémentez ici la logique réelle d'envoi.
+
+
+def get_dispatcher() -> ContentDispatcher:
+    """
+    Renvoie une instance de ContentDispatcher.
+    """
+    return ContentDispatcher()
+
 
 # Mapping des plateformes aux fonctions de publication
 PLATFORM_DISPATCHERS = {
@@ -64,24 +80,31 @@ PLATFORM_DISPATCHERS = {
     "telegram": publish_to_telegram,
     "facebook": publish_to_facebook,
     "onlyfans": publish_to_onlyfans,
+    "fanvue": publish_to_fanvue,
+    "fansly": publish_to_fansly,
+    "loyalfans": publish_to_loyalfans,
+    "whatsapp": publish_to_whatsapp,
+    "patreon": publish_to_patreon,
+    "discord": publish_to_discord,
+    "mymfans": publish_to_mymfans,
+    "manyvids": publish_to_manyvids,
 }
+
 
 @log_step
 async def dispatch_content(content: Dict, platforms: List[str], model_info: Dict) -> Dict:
     """
-    Orchestration principale pour publier le contenu sur plusieurs plateformes.
+    Orchestre la publication du contenu sur plusieurs plateformes.
 
-    :param content: Données du contenu à publier (caption, media, etc.)
-    :param platforms: Liste des plateformes cibles (e.g., ["instagram", "tiktok"])
-    :param model_info: Informations de la muse et/ou de l'agence (id, tokens, configuration, etc.)
-    :return: Dictionnaire des résultats de publication par plateforme.
+    :param content: Données du contenu à publier (ex.: caption, media, etc.).
+    :param platforms: Liste des plateformes cibles (ex.: ["instagram", "tiktok"]).
+    :param model_info: Informations de la muse et/ou de l'agence (contenant au minimum les identifiants et tokens si nécessaire).
+    :return: Dictionnaire regroupant les résultats de publication par plateforme.
     """
     results = {}
 
-    # Itération sur la liste des plateformes demandées
     for platform in platforms:
         try:
-            # Vérifier s'il existe une fonction de publication associée
             if platform in PLATFORM_DISPATCHERS:
                 dispatch_func = PLATFORM_DISPATCHERS[platform]
                 results[platform] = await dispatch_func(content, model_info)

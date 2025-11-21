@@ -1,54 +1,60 @@
-# services/content_distributor/logger.py
-
 import logging
-from logging.handlers import RotatingFileHandler
-import os
-import datetime
-import requests
+from datetime import datetime
+from typing import Any, Dict, Callable, Coroutine, TypeVar
 
-# ➜ Créer le dossier de logs s'il n'existe pas
-LOG_DIR = os.path.join(os.path.dirname(__file__), '../../logs')
-os.makedirs(LOG_DIR, exist_ok=True)
+# Configuration du logger pour le module content_distributor
+logger = logging.getLogger("content_distributor")
+logger.setLevel(logging.INFO)
 
-LOG_FILE_PATH = os.path.join(LOG_DIR, 'dispatcher.log')
+if not logger.handlers:
+    handler = logging.StreamHandler()
+    formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
 
-class TelegramLogHandler(logging.Handler):
-    def __init__(self, bot_token: str, chat_id: str):
-        super().__init__()
-        self.bot_token = bot_token
-        self.chat_id = chat_id
+# Typing pour le décorateur
+F = TypeVar("F", bound=Callable[..., Coroutine[Any, Any, Any]])
 
-    def emit(self, record):
-        log_entry = self.format(record)
-        url = f"https://api.telegram.org/bot{self.bot_token}/sendMessage"
-        payload = {"chat_id": self.chat_id, "text": log_entry}
-        try:
-            requests.post(url, json=payload, timeout=5)
-        except Exception:
-            pass  # Ne pas crasher le logger si Telegram est indisponible
+async def log_platform_event(
+    platform: str,
+    agency_id: str,
+    muse_id: str,
+    content_id: str,
+    status: str,
+    message: str,
+    metadata: Dict[str, Any]
+) -> Dict[str, Any]:
+    """
+    Enregistre un événement lié à la publication sur une plateforme.
 
-# Configuration du logger principal
-logger = logging.getLogger("dispatcher")
-logger.setLevel(logging.DEBUG)
+    Retourne le dictionnaire de l'événement pour un stockage ou traitement ultérieur.
+    """
+    event: Dict[str, Any] = {
+        "platform": platform,
+        "agency_id": agency_id,
+        "muse_id": muse_id,
+        "content_id": content_id,
+        "status": status,
+        "message": message,
+        "metadata": metadata,
+        "timestamp": utcnow().isoformat()
+    }
+    logger.info(f"Platform event: {event}")
+    return event
 
-formatter = logging.Formatter('[%(asctime)s] [%(levelname)s] %(message)s')
+def log_step(func: F) -> F:
+    """
+    Décorateur pour logger le début et la fin d'une fonction asynchrone.
 
-file_handler = RotatingFileHandler(LOG_FILE_PATH, maxBytes=1000000, backupCount=5)
-file_handler.setFormatter(formatter)
-logger.addHandler(file_handler)
+    Usage:
+        @log_step
+        async def ma_fonction(...):
+            ...
+    """
+    async def wrapper(*args: Any, **kwargs: Any) -> Any:
+        logger.info(f"Starting function: {func.__name__}")
+        result = await func(*args, **kwargs)
+        logger.info(f"Finished function: {func.__name__}")
+        return result
 
-# Exemple d'intégration Telegram (remplacer par vos vraies clés définitives)
-TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_LOG_BOT_TOKEN")
-TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_LOG_CHAT_ID")
-
-if TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID:
-    telegram_handler = TelegramLogHandler(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID)
-    telegram_handler.setFormatter(formatter)
-    telegram_handler.setLevel(logging.INFO)
-    logger.addHandler(telegram_handler)
-
-# Utilisation recommandée dans le code :
-# from services.content_distributor.logger import logger
-# logger.info("Message standard")
-# logger.success("Succès déploiement")
-# logger.error("Erreur critique")
+    return wrapper  # type: ignore

@@ -1,0 +1,90 @@
+# docker-compose.yml
+# Configuration Docker Compose pour SparkMetrics Platform
+# Usage: docker-compose up -d
+
+version: '3.8'
+
+services:
+  # Backend FastAPI
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sparkmetrics-api
+    ports:
+      - "8000:8000"
+    environment:
+      - MONGO_URI=mongodb://mongo:27017
+      - MONGO_URI_BI=mongodb://mongo:27017
+      - DB_NAME_CORE=musai_core
+      - DB_NAME_BI=musai_bi
+      - ENABLE_BI=true
+      - ENABLE_SCHEDULER=true
+      - ENABLE_CLOUDPHONE=false
+      - ENABLE_OTP=false
+      # Ajoutez vos autres variables d'environnement ici
+      # - SECRET_KEY=your-secret-key
+      # - GOOGLE_CLIENT_ID=your-google-client-id
+      # - GOOGLE_CLIENT_SECRET=your-google-client-secret
+    volumes:
+      # Montage optionnel pour le développement (commenté en production)
+      # - ./api:/app/api
+      - ./logs:/app/logs
+    depends_on:
+      - mongo
+    restart: unless-stopped
+    networks:
+      - sparkmetrics-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # MongoDB (Core + BI)
+  mongo:
+    image: mongo:7.0
+    container_name: sparkmetrics-mongo
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=changeme
+    volumes:
+      - mongo-data:/data/db
+      - ./scripts:/docker-entrypoint-initdb.d
+    restart: unless-stopped
+    networks:
+      - sparkmetrics-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Frontend Next.js (optionnel - peut être servi séparément)
+  # Décommentez si vous voulez servir le frontend via Docker
+  # frontend:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile.frontend
+  #   container_name: sparkmetrics-frontend
+  #   ports:
+  #     - "3000:3000"
+  #   environment:
+  #     - NEXT_PUBLIC_API_BASE_URL=http://api:8000
+  #     - NEXT_PUBLIC_GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+  #   depends_on:
+  #     - api
+  #   restart: unless-stopped
+  #   networks:
+  #     - sparkmetrics-network
+
+volumes:
+  mongo-data:
+    driver: local
+
+networks:
+  sparkmetrics-network:
+    driver: bridge

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional
-from api.core.auths import get_current_user
+from core.auth import get_current_user
 from api.schemas.users import UserResponse
 from services.analytics.tunnels import get_dynamic_tunnel_overview
 
@@ -30,7 +30,7 @@ async def analysis_tunnels(
     ensuite organisés par muse et des recommandations métier sont générées en fonction de seuils prédéfinis.
     """
     # Définir la période d'analyse
-    end_date = datetime.utcnow()
+    end_date = utcnow()
     start_date = end_date - timedelta(days=days)
 
     # Appeler le service pour récupérer l'agrégation dynamique des logs

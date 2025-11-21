@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
-from api.services.databases import db
-from core.auths import get_current_user, is_operator_or_admin
+from api.databases.databases import db
+from api.core.auth import get_current_user, is_operator_or_admin
 from schemas.users import UserResponse
 from datetime import datetime
 from fastapi import Query

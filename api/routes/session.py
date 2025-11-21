@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
-from core.auths import get_current_user
-from schemas.users import UserResponse
+from api.core.auth import get_current_user
+from api.schemas.users import UserResponse
 from fastapi import Response
 
 router = APIRouter()

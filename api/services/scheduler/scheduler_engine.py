@@ -1,12 +1,12 @@
 import asyncio
 from datetime import datetime
-from services.databases import db
+from api.databases.databases import db
 from services.content_distributor.dispatcher import dispatch_content
-from services.content_distributor.logger import logger
+from api.services.content_distributor.logger import logger
 
 async def scheduler_loop():
     while True:
-        now = datetime.utcnow()
+        now = utcnow()
         tasks = await db["scheduled_tasks"].find({
             "scheduled_at": {"$lte": now},
             "status": "pending"

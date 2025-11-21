@@ -1,8 +1,8 @@
 # services/logs/activity_logger.py
 from datetime import datetime
 from typing import Optional, Dict
-from services.databases import db
-from services.content_distributor.logger import logger
+from api.databases.databases import db
+from api.services.content_distributor.logger import logger
 
 
 async def log_activity(
@@ -14,7 +14,7 @@ async def log_activity(
     details: Optional[Dict] = None
 ):
     log_doc = {
-        "timestamp": datetime.utcnow(),
+        "timestamp": utcnow(),
         "type": action,            # e.g., "post", "schedule", "error", etc.
         "status": status,          # "success", "failed", "skipped"
         "platform": platform,      # "instagram", "tiktok", etc.

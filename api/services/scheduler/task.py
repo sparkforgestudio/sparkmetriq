@@ -1,39 +1,42 @@
-from services.content_distributor.dispatcher import dispatch_content
-from pymongo import MongoClient
-from datetime import datetime
-import asyncio
-from services.scheduler.logger import scheduler_logger
+# api/services/scheduler/task.py
 
-# Configuration MongoDB
-client = MongoClient("mongodb://localhost:27017")
-db = client["musemgmtdb"]
+from datetime         import datetime
+from api.databases.databases import db
+from api.services.scheduler.logger import scheduler_logger
+from api.services.content_distributor.dispatcher import get_dispatcher
 
 async def dispatch_scheduled_posts():
-    now = datetime.utcnow()
-    scheduled_posts = db.public_contents.find({"scheduled_at": {"$lte": now}, "status": "pending"})
+    now = utcnow()
+    cursor = db["scheduled_tasks"].find({
+        "scheduled_at": {"$lte": now},
+        "status":       "pending"
+    })
+    # Ici on récupère **tous** les documents dans une liste asynchrone
+    scheduled_posts = await cursor.to_list(length=None)
 
-    async for post in scheduled_posts:
-        platforms = post.get("platforms", [])
-        model_info = {
-            "muse_id": post.get("muse_id"),
-            "agency_id": post.get("agency_id"),
-            "access_token": post.get("access_token", None)
-        }
-
+    dispatcher = get_dispatcher()
+    for post in scheduled_posts:
         try:
-            result = await dispatch_content(post, platforms, model_info)
-
-            # Mise à jour dans MongoDB
-            db.public_contents.update_one(
+            await dispatcher.dispatch(
+                platform= post["platform"],
+                content=  post["content"],
+                agency_id=post["agency_id"],
+                muse_id=post.get("muse_id")
+            )
+            await db["scheduled_tasks"].update_one(
                 {"_id": post["_id"]},
                 {"$set": {
-                    "status": "dispatched",
-                    "dispatched_result": result,
-                    "dispatched_at": datetime.utcnow()
+                    "status":       "dispatched",
+                    "dispatched_at": utcnow()
                 }}
             )
-
-            scheduler_logger.info(f"✅ Post {post['_id']} dispatched to {platforms} with result: {result}")
-
+            scheduler_logger.info(f"Tâche {post['_id']} dispatchée.")
         except Exception as e:
-            scheduler_logger.error(f"❌ Error dispatching post {post['_id']}: {str(e)}")
+            scheduler_logger.error(f"Échec dispatch {post['_id']}: {e}")
+            await db["scheduled_tasks"].update_one(
+                {"_id": post["_id"]},
+                {"$set": {
+                    "status":        "error",
+                    "error_message": str(e)
+                }}
+            )

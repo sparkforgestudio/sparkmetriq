@@ -1,13 +1,10 @@
 import pytest
-from app import app  # Import de l'application Flask
+from fastapi.testclient import TestClient
+from api.main import app  # Assurez-vous que ce chemin correspond à l'emplacement de votre instance d'app FastAPI
 
-@pytest.fixture
-def client():
-    app.config["TESTING"] = True
-    with app.test_client() as client:
-        yield client
+client = TestClient(app)
 
-def test_home(client):
+def test_homepage():
+    # Exemple de test simple qui vérifie que la route racine répond avec un code 200
     response = client.get("/")
     assert response.status_code == 200
-    assert b"Hello, Flask!" in response.data  # Vérifie la réponse

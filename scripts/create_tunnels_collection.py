@@ -20,7 +20,7 @@ example_tunnel = {
     "content_tags": ["teasing", "conversion"],
     "preferred_format": "story",
     "call_to_action": "dm",  # ex: dm, linktree, join telegram, etc.
-    "created_at": datetime.utcnow()
+    "created_at": utcnow()
 }
 
 # Insertion de test

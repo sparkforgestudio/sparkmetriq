@@ -1,20 +1,6 @@
 import pytest
-import asyncio
-from api.routes.auths import router as auths_router
-from api.routes.users import router as users_router
-from api.routes.payments import router as payments_router
-from api.routes.webhooks.payments_webhook import router as webhook_router
-from api.routes.ppv import router as ppv_router
-from api.routes.public_contents import router as public_router
-from api.routes.dispatcher import router as dispatcher_router
-from api.routes.tunnels import router as tunnels_router
-from api.routes.instagram_test import router as instagram_router
-from api.routes.threads_test import router as threads_router
-from api.routes.snapchat_test import router as snapchat_test_router
-from api.routes.scheduler import router as scheduler_router
-from services.content_distributor.onlyfans import publish_to_onlyfans
+from api.services.content_distributor.dispatcher import dispatch_content
 
-# Activer le mode async pour pytest
 pytestmark = pytest.mark.asyncio
 
 @pytest.mark.asyncio
@@ -45,7 +31,10 @@ async def test_dispatch_to_all_platforms():
 
     results = await dispatch_content(fake_content, platforms, fake_model_info)
 
-    # Vérification du format de la réponse
+    # Vérification du format de la réponse pour chaque plateforme
     for platform in platforms:
-        assert platform in results
-        assert "status" in results[platform] or "error" in results[platform]
+        assert platform in results, f"La plateforme '{platform}' n'est pas présente dans les résultats."
+        res = results[platform]
+        assert "status" in res or "error" in res, (
+            f"Pour la plateforme '{platform}', aucune clé 'status' ou 'error' n'a été trouvée."
+        )

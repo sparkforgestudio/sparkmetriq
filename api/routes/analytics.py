@@ -1,8 +1,8 @@
 from fastapi import APIRouter, HTTPException, Depends
-from services.database import db
+from api.databases.databases import db
 from core.security import hash_password, verify_password, create_access_token
 from datetime import timedelta
-
+from core.auth import get_current_user, is_admin
 router = APIRouter()
 
 @router.get("/", response_model=list)

@@ -2,7 +2,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from api.schemas.funnel_config import FunnelConfig
 from services.config.funnel_config import get_config, create_or_update_config, delete_config
-from api.core.auths import get_current_user
+from api.core.auth import get_current_user
 from api.schemas.users import UserResponse
 
 router = APIRouter()

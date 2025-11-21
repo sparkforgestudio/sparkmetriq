@@ -3,8 +3,8 @@
 import asyncio
 from datetime import datetime, timezone
 from motor.motor_asyncio import AsyncIOMotorClient
-from services.content_distributor.dispatcher import dispatch_content
-from services.content_distributor.logger import logger
+from api.services.content_distributor.dispatcher import dispatch_content
+from api.services.content_distributor.logger import logger
 
 MONGO_URI = "mongodb://localhost:27017"
 DB_NAME = "musemgmtdb"

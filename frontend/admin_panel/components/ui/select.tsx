@@ -1,16 +1,37 @@
-import { SelectHTMLAttributes } from "react"
-import clsx from "clsx"
+"use client";
 
-type SelectProps = SelectHTMLAttributes<HTMLSelectElement>
+import * as React from "react";
 
-export function Select({ className, ...props }: SelectProps) {
+export interface SelectOption {
+  value: string;
+  label: string;
+}
+
+export interface SelectProps {
+  options: SelectOption[];
+  value?: string;
+  placeholder?: string;
+  onValueChange: (value: string) => void;
+}
+
+export function Select({
+  options,
+  value,
+  placeholder = "Select…",
+  onValueChange,
+}: SelectProps) {
   return (
     <select
-      {...props}
-      className={clsx(
-        "mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm",
-        className
-      )}
-    />
-  )
+      className="border rounded px-2 py-1"
+      value={value}
+      onChange={(e) => onValueChange(e.target.value)}
+    >
+      <option value="">{placeholder}</option>
+      {options.map((o) => (
+        <option key={o.value} value={o.value}>
+          {o.label}
+        </option>
+      ))}
+    </select>
+  );
 }

@@ -1,0 +1,9 @@
+[tool.ruff]
+select = ["F","E","W","I"]   # I = isort, F401 = unused import
+extend-exclude = ["chat_tests/fixtures/*"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["api"]
+
+[tool.ruff.format]
+quote-style = "double"

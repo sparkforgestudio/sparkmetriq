@@ -1,6 +1,6 @@
 # services/config/funnel_config.py
 from api.schemas.funnel_config import FunnelConfig
-from services.databases import db  # Adaptez l'import en fonction de votre architecture
+from api.databases.databases import db
 
 CONFIG_COLLECTION = "funnel_configs"
 
