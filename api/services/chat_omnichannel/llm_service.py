@@ -66,3 +66,8 @@ class OpenAIService(LLMService):
         content = resp.choices[0].message.content
         usage = resp.usage.to_dict() if hasattr(resp, 'usage') else None
         return GeneratedResponse(text=content, usage=usage)
+
+# Import et réexport de DeepSeekService depuis le module séparé
+# L'import est fait à la fin pour éviter les problèmes d'import circulaire
+# (deepseek_service.py importe depuis llm_service.py, mais après la définition des classes)
+from .deepseek_service import DeepSeekService
