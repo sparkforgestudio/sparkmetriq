@@ -132,7 +132,8 @@ class Settings(BaseSettings):
     """Configuration principale musAI."""
 
     # --- Infos app ---
-    APP_NAME: str = Field("musAI Platform", description="Nom de l'application")
+    APP_NAME: str = Field("    APP_NAME: str = Field("Sparkmetriq", description="Nom de l'application")
+", description="Nom de l'application")
     APP_VERSION: str = Field("1.0.0", description="Version")
     DEBUG: bool = Field(False, description="Mode debug")
     ENVIRONMENT: str = Field("development", description="Environment (development|staging|production)")
@@ -241,6 +242,16 @@ class Settings(BaseSettings):
     @property
     def is_prod(self) -> bool:
         return self.ENVIRONMENT == "production"
+
+    @property
+    def app_version(self) -> str:
+        """Alias pour APP_VERSION (compatibilité avec code existant)."""
+        return self.APP_VERSION
+
+    @property
+    def environment(self) -> str:
+        """Alias pour ENVIRONMENT (compatibilité avec code existant)."""
+        return self.ENVIRONMENT
 
     @property
     def core_dsn(self) -> str:
