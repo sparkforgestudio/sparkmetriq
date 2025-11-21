@@ -132,8 +132,7 @@ class Settings(BaseSettings):
     """Configuration principale musAI."""
 
     # --- Infos app ---
-    APP_NAME: str = Field("    APP_NAME: str = Field("Sparkmetriq", description="Nom de l'application")
-", description="Nom de l'application")
+    APP_NAME: str = Field("musAI Platform", description="Nom de l'application")
     APP_VERSION: str = Field("1.0.0", description="Version")
     DEBUG: bool = Field(False, description="Mode debug")
     ENVIRONMENT: str = Field("development", description="Environment (development|staging|production)")
