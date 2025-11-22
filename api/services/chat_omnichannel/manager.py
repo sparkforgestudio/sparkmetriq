@@ -4,7 +4,8 @@ from api.databases.databases import get_core_db
 from api.schemas.chat import ChatMessageIn, ChatMessageOut
 from bson import ObjectId
 import os
-from api.services.chat_omnichannel.llm_service import Message, LLMService, OpenAIService, DeepSeekService
+from api.services.chat_omnichannel.llm_service import Message, LLMService, OpenAIService
+from api.services.chat_omnichannel.deepseek_service import DeepSeekService
 
 # Collection Motor pour les messages de chat (base Core)
 db_core = get_core_db()
