@@ -265,3 +265,4 @@ async def bulk_action(device_refs: List[str], action: str, **kwargs) -> Dict[str
 
 
 
+

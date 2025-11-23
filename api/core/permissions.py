@@ -4,9 +4,12 @@ Système RBAC minimal pour la gestion des talents.
 """
 
 from fastapi import HTTPException, status, Depends
-from typing import Iterable, List, Optional, Callable
+from typing import Iterable, List, Optional, Callable, TYPE_CHECKING
 from api.schemas.users import UserResponse, UserRole
-from api.core.auth import get_current_user
+
+# Import conditionnel pour éviter les imports circulaires
+if TYPE_CHECKING:
+    from api.core.auth import get_current_user
 
 def require_role(current_user: UserResponse, roles: Iterable[str]):
     """Vérifie que l'utilisateur a au moins un des rôles requis."""
@@ -36,6 +39,9 @@ def has_role(required_role: UserRole) -> Callable:
         Fonction de dépendance FastAPI qui retourne l'utilisateur si le rôle est valide,
         ou lève une HTTPException 403 sinon.
     """
+    # Import lazy pour éviter les imports circulaires
+    from api.core.auth import get_current_user
+    
     async def role_checker(current_user: UserResponse = Depends(get_current_user)) -> UserResponse:
         # Si l'utilisateur est admin, il a tous les droits
         if getattr(current_user, "is_admin", False):
