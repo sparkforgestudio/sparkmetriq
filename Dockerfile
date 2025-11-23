@@ -56,3 +56,6 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
 
 # Commande par défaut (peut être surchargée)
 CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+# Copier tous les fichiers de requirements (core + modules optionnels)
+COPY requirements.txt requirements-ai-marketing.txt requirements-cloudphone.txt ./
