@@ -1,5 +1,6 @@
 # Dockerfile multi-stage pour SparkMetrics Platform (Backend API uniquement)
 # Le frontend Next.js doit être servi séparément ou via un reverse proxy
+# dokerfile with all requirements
 
 # Stage 1: Build du backend FastAPI
 FROM python:3.11-slim as backend-builder
@@ -59,3 +60,5 @@ CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]
 
 # Copier tous les fichiers de requirements (core + modules optionnels)
 COPY requirements.txt requirements-ai-marketing.txt requirements-cloudphone.txt ./
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
