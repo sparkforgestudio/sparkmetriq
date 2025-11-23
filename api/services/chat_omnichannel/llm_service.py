@@ -9,7 +9,7 @@ from pydantic import BaseModel
 
 class Message(BaseModel):
     """
-    Représente un message échangé avec le LLM.
+    Représente un message dans une conversation LLM.
     role : "system" | "user" | "assistant"
     content : texte du message
     """
@@ -19,9 +19,9 @@ class Message(BaseModel):
 
 class GeneratedResponse(BaseModel):
     """
-    Réponse générée par le LLM.
-    text  : contenu textuel principal
-    usage : métadonnées éventuelles (nb tokens, coût, etc.)
+    Réponse standardisée renvoyée par un LLM provider.
+    text   : texte généré
+    usage  : infos d'usage (tokens, coût…) optionnelles
     """
     text: str
     usage: Optional[Dict[str, Any]] = None
@@ -29,14 +29,13 @@ class GeneratedResponse(BaseModel):
 
 class LLMService(abc.ABC):
     """
-    Interface abstraite pour un client LLM (DeepSeek, OpenAI, etc.).
-
-    Implémentations concrètes à placer dans des fichiers séparés, par ex. :
-      - deepseek_service.py  -> class DeepSeekService(LLMService)
-      - openai_service.py    -> class OpenAIService(LLMService)
+    Interface abstraite pour un client LLM (OpenAI, DeepSeek, etc.).
+    Implémentez :
+      - generate : appel synchrone (one-shot)
+      - stream   : appel streaming (facultatif)
     """
 
-    def __init__(self, api_key: str, model: str, temperature: float = 0.7):
+    def __init__(self, api_key: str, model: str, temperature: float = 0.7) -> None:
         """
         :param api_key: Clé API du fournisseur.
         :param model: Nom du modèle à utiliser.
@@ -54,7 +53,6 @@ class LLMService(abc.ABC):
     ) -> GeneratedResponse:
         """
         Envoie le prompt complet au LLM et renvoie la réponse.
-
         :param messages: Liste de messages {role, content}.
         :param tenant_id: Contexte multi-tenant pour logs/tracing.
         """
@@ -68,20 +66,57 @@ class LLMService(abc.ABC):
         """
         Appel streaming si supporté par le fournisseur.
         Génère un itérable de fragments type Message (role="assistant").
-
-        Par défaut : non implémenté, à surcharger si nécessaire.
+        Par défaut, non implémenté.
         """
         raise NotImplementedError("Streaming non implémenté pour ce service")
 
 
-# IMPORTANT :
-# - Ne pas importer DeepSeekService ici pour éviter tout import circulaire.
-# - Les services concrets doivent être définis dans leurs modules respectifs,
-#   par ex. api/services/chat_omnichannel/deepseek_service.py :
-#
-#   from .llm_service import LLMService, Message, GeneratedResponse
-#   class DeepSeekService(LLMService):
-#       ...
-#
-# Et les autres parties du code doivent importer DeepSeekService
-# DIRECTEMENT depuis deepseek_service.py, pas depuis llm_service.py.
+# -------------------------------------------------------------------
+# Implémentation facultative pour OpenAI
+# (ne doit PAS casser si openai n'est pas installé et n'est pas utilisée)
+# -------------------------------------------------------------------
+try:
+    # Async client moderne (openai>=1.*). Adapte si tu utilises une autre version.
+    from openai import AsyncOpenAI  # type: ignore
+except ImportError:  # pragma: no cover - dépendance optionnelle
+    AsyncOpenAI = None  # type: ignore
+
+
+class OpenAIService(LLMService):
+    """
+    Exemple de sous-classe LLMService pour OpenAI.
+    À n'utiliser que si la lib 'openai' est installée.
+    """
+
+    async def generate(
+        self,
+        messages: List[Message],
+        tenant_id: Optional[str] = None,
+    ) -> GeneratedResponse:
+        if AsyncOpenAI is None:
+            raise RuntimeError(
+                "La bibliothèque 'openai' n'est pas installée. "
+                "Installez-la ou n'utilisez pas OpenAIService."
+            )
+
+        client = AsyncOpenAI(api_key=self.api_key)
+        resp = await client.chat.completions.create(
+            model=self.model,
+            temperature=self.temperature,
+            messages=[m.model_dump() for m in messages],
+        )
+
+        content = resp.choices[0].message.content or ""
+        usage = resp.usage.model_dump() if getattr(resp, "usage", None) else None
+
+        return GeneratedResponse(text=content, usage=usage)
+
+
+# Note important :
+# DeepSeekService est défini dans deepseek_service.py
+# Pour éviter tout import circulaire :
+# - deepseek_service.py importe LLMService, Message, GeneratedResponse depuis ce module
+# - MAIS ce module ne doit PAS importer DeepSeekService.
+# Si tu as besoin d'un "factory" pour choisir le provider, fais-le
+# dans un autre fichier (ex: provider_registry.py) ou via un import local
+# à l'intérieur d'une fonction, jamais en import global ici.
