@@ -1,17 +1,26 @@
 # api/core/settings.py
 """
-Configuration centralisée de l'application musAI Platform.
+Configuration centralisée de l'application core.
 Compatible Pydantic v2 + pydantic-settings.
-- 2 bases Mongo: CORE (musai_core) & BI (musai_bi)
+- 2 bases Mongo: CORE & BI
 - Feature flags MAJUSCULES (ENABLE_BI, ENABLE_SCHEDULER, ENABLE_CLOUDPHONE, ENABLE_OTP)
 """
 
 from __future__ import annotations
 
+import os
 from typing import Optional
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings
 from pydantic import ConfigDict
+
+# Import du module de compatibilité legacy (hors core)
+from api.services.compat_env import (
+    core_db_uri,
+    core_db_name,
+    bi_db_uri,
+    bi_db_name,
+)
 
 
 # ------------------------------
@@ -25,7 +34,7 @@ class DatabaseSettings(BaseSettings):
         description="URI MongoDB (générique)"
     )
     mongo_db: str = Field(
-        default="musai_dev",
+        default="core_dev",
         description="Nom de la base générique"
     )
     max_pool_size: int = Field(100, description="Taille maximale du pool")
@@ -129,10 +138,10 @@ class ChatSettings(BaseSettings):
 # Settings principale
 # ------------------------------
 class Settings(BaseSettings):
-    """Configuration principale musAI."""
+    """Configuration principale core."""
 
     # --- Infos app ---
-    APP_NAME: str = Field("musAI Platform", description="Nom de l'application")
+    APP_NAME: str = Field("Core Platform", description="Nom de l'application")
     APP_VERSION: str = Field("1.0.0", description="Version")
     DEBUG: bool = Field(False, description="Mode debug")
     ENVIRONMENT: str = Field("development", description="Environment (development|staging|production)")
@@ -150,11 +159,44 @@ class Settings(BaseSettings):
     FEATURE_COLLAB_INTEGRATIONS: bool = Field(True, description="Activer intégrations ClickUp/Notion")
 
     # --- Bases de données (2 DSN explicites) ---
-    MONGO_URI: str = Field("mongodb://localhost:27017", description="URI MongoDB (CORE)")
-    DB_NAME_CORE: str = Field("musai_core", description="Nom DB CORE")
+    CORE_DB_URI: str = Field(
+        default_factory=lambda: core_db_uri(),
+        description="URI MongoDB CORE"
+    )
+    CORE_DB_NAME: str = Field(
+        default_factory=lambda: core_db_name(),
+        description="Nom DB CORE"
+    )
 
-    MONGO_URI_BI: str = Field("mongodb://localhost:27017", description="URI MongoDB (BI)")
-    DB_NAME_BI: str = Field("musai_bi", description="Nom DB BI")
+    BI_DB_URI: str = Field(
+        default_factory=lambda: bi_db_uri(),
+        description="URI MongoDB BI"
+    )
+    BI_DB_NAME: str = Field(
+        default_factory=lambda: bi_db_name(),
+        description="Nom DB BI"
+    )
+    
+    # Propriétés de compatibilité legacy (pour éviter breaking changes)
+    @property
+    def MONGO_URI(self) -> str:
+        """Compatibilité legacy : MONGO_URI -> CORE_DB_URI."""
+        return self.CORE_DB_URI
+    
+    @property
+    def DB_NAME_CORE(self) -> str:
+        """Compatibilité legacy : DB_NAME_CORE -> CORE_DB_NAME."""
+        return self.CORE_DB_NAME
+    
+    @property
+    def MONGO_URI_BI(self) -> str:
+        """Compatibilité legacy : MONGO_URI_BI -> BI_DB_URI."""
+        return self.BI_DB_URI
+    
+    @property
+    def DB_NAME_BI(self) -> str:
+        """Compatibilité legacy : DB_NAME_BI -> BI_DB_NAME."""
+        return self.BI_DB_NAME
 
     # --- LLM & modules IA (extraits nécessaires) ---
     TRANSLATOR_LLM_BASE_URL: Optional[str] = Field(None, description="Base URL LLM (translator)")
@@ -218,9 +260,42 @@ class Settings(BaseSettings):
         env_prefix="",               # pas de préfixe global
         populate_by_name=True,       # accepte alias/nom champ
         validate_assignment=True,
+        extra="ignore",              # ignorer les variables env non mappées
     )
 
     # ---- Validators ----
+    @field_validator("CORE_DB_URI", mode="before")
+    @classmethod
+    def _validate_core_db_uri(cls, v: str | None) -> str:
+        """Fallback pour CORE_DB_URI via module de compatibilité."""
+        if v:
+            return v
+        return core_db_uri()
+    
+    @field_validator("CORE_DB_NAME", mode="before")
+    @classmethod
+    def _validate_core_db_name(cls, v: str | None) -> str:
+        """Fallback pour CORE_DB_NAME via module de compatibilité."""
+        if v:
+            return v
+        return core_db_name()
+    
+    @field_validator("BI_DB_URI", mode="before")
+    @classmethod
+    def _validate_bi_db_uri(cls, v: str | None) -> str:
+        """Fallback pour BI_DB_URI via module de compatibilité."""
+        if v:
+            return v
+        return bi_db_uri()
+    
+    @field_validator("BI_DB_NAME", mode="before")
+    @classmethod
+    def _validate_bi_db_name(cls, v: str | None) -> str:
+        """Fallback pour BI_DB_NAME via module de compatibilité."""
+        if v:
+            return v
+        return bi_db_name()
+    
     @field_validator("ENVIRONMENT")
     @classmethod
     def validate_environment(cls, v: str) -> str:
@@ -254,11 +329,77 @@ class Settings(BaseSettings):
 
     @property
     def core_dsn(self) -> str:
-        return f"{self.MONGO_URI}/{self.DB_NAME_CORE}"
+        """DSN pour la base CORE (utilise les variables neutres)."""
+        return f"{self.CORE_DB_URI}/{self.CORE_DB_NAME}"
 
     @property
     def bi_dsn(self) -> str:
-        return f"{self.MONGO_URI_BI}/{self.DB_NAME_BI}"
+        """DSN pour la base BI (utilise les variables neutres)."""
+        return f"{self.BI_DB_URI}/{self.BI_DB_NAME}"
+
+    # --- Propriétés de compatibilité (legacy) ---
+    # Ces propriétés permettent d'utiliser les flags en minuscules
+    # alors qu'ils sont définis en MAJUSCULES dans Settings
+
+    @property
+    def enable_scheduler(self) -> bool:
+        """Compatibilité legacy : certains modules utilisent settings.enable_scheduler."""
+        return self.ENABLE_SCHEDULER
+
+    @property
+    def enable_bi(self) -> bool:
+        """Compatibilité legacy : settings.enable_bi -> ENABLE_BI."""
+        return self.ENABLE_BI
+
+    @property
+    def enable_cloudphone(self) -> bool:
+        """Compatibilité legacy : settings.enable_cloudphone -> ENABLE_CLOUDPHONE."""
+        return self.ENABLE_CLOUDPHONE
+
+    @property
+    def enable_otp(self) -> bool:
+        """Compatibilité legacy : settings.enable_otp -> ENABLE_OTP."""
+        return self.ENABLE_OTP
+
+    @property
+    def feature_cloudphone_enabled(self) -> bool:
+        """Compatibilité legacy : settings.feature_cloudphone_enabled -> ENABLE_CLOUDPHONE."""
+        return self.ENABLE_CLOUDPHONE
+
+    @property
+    def feature_otp_enabled(self) -> bool:
+        """Compatibilité legacy : settings.feature_otp_enabled -> ENABLE_OTP."""
+        return self.ENABLE_OTP
+
+    @property
+    def feature_translator_enabled(self) -> bool:
+        """Compatibilité legacy : settings.feature_translator_enabled -> FEATURE_TRANSLATOR_ENABLED."""
+        return self.FEATURE_TRANSLATOR_ENABLED
+
+    @property
+    def feature_convo_recap_enabled(self) -> bool:
+        """Compatibilité legacy : settings.feature_convo_recap_enabled -> FEATURE_CONVO_RECAP_ENABLED."""
+        return self.FEATURE_CONVO_RECAP_ENABLED
+
+    @property
+    def feature_message_builder_enabled(self) -> bool:
+        """Compatibilité legacy : settings.feature_message_builder_enabled -> FEATURE_MESSAGE_BUILDER_ENABLED."""
+        return self.FEATURE_MESSAGE_BUILDER_ENABLED
+
+    @property
+    def feature_link_tracking_enabled(self) -> bool:
+        """Compatibilité legacy : settings.feature_link_tracking_enabled -> FEATURE_LINK_TRACKING_ENABLED."""
+        return self.FEATURE_LINK_TRACKING_ENABLED
+
+    @property
+    def feature_collab_enabled(self) -> bool:
+        """Compatibilité legacy : settings.feature_collab_enabled -> FEATURE_COLLAB_ENABLED."""
+        return self.FEATURE_COLLAB_ENABLED
+
+    @property
+    def collab_ws_path(self) -> str:
+        """Compatibilité legacy : settings.collab_ws_path -> COLLAB_WS_PATH."""
+        return self.COLLAB_WS_PATH
 
 
 # Instance globale + getter
