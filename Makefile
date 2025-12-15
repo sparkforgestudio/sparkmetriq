@@ -133,13 +133,13 @@ db-seed:
 
 db-clean:
 	@$(ACTIVATE) && $(PY) - <<'PY'
-from api.databases.databases import db_core, db_bi
-for c in ["users","chat_messages","payments","conversation_recaps","message_templates","campaigns","outbox_messages"]:
-    db_core[c].delete_many({})
-for c in ["events_funnel","conversation_daily","revenue_daily","ppv_daily","scheduled_drafts"]:
-    db_bi[c].delete_many({})
-print("✅ DB clean (Core & BI).")
-PY
+	from api.databases.databases import db_core, db_bi
+	for c in ["users","chat_messages","payments","conversation_recaps","message_templates","campaigns","outbox_messages"]:
+	    db_core[c].delete_many({})
+	for c in ["events_funnel","conversation_daily","revenue_daily","ppv_daily","scheduled_drafts"]:
+	    db_bi[c].delete_many({})
+	print("✅ DB clean (Core & BI).")
+	PY
 
 # -------- Santé --------
 health:
@@ -181,3 +181,9 @@ clean:
 reset: clean
 	@rm -rf .mypy_cache .ruff_cache || true
 	@echo "✅ Reset caches."
+
+.PHONY: lint-architecture
+lint-architecture:
+	./scripts/ci/check_core_imports.sh
+	./scripts/ci/check_core_vocabulary.sh /tmp/core_blacklist_tokens.txt
+	python ./scripts/check_workspace_consistency.py

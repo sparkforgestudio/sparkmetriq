@@ -1,0 +1,4 @@
+"""
+Schémas Pydantic pour saasentialcore.
+"""
+

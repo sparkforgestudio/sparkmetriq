@@ -1,0 +1,4 @@
+"""
+Application core pour saasentialcore.
+"""
+

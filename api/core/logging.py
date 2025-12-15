@@ -125,18 +125,18 @@ def setup_logging(use_json: bool = False) -> None:
 
 def get_logger(name: str | None = None) -> logging.Logger:
     """
-    Retourne un logger nommé cohérent pour Sparkmetriq.
+    Retourne un logger nommé cohérent pour le core.
 
-    Si name est None, on retourne un logger racine 'sparkmetriq'.
+    Si name est None, on retourne un logger racine 'saasentialcore'.
 
     Args:
-        name: Nom du logger. Si None, utilise 'sparkmetriq' par défaut.
+        name: Nom du logger. Si None, utilise 'saasentialcore' par défaut.
 
     Returns:
         Logger configuré avec le nom spécifié.
     """
     if not name:
-        name = "sparkmetriq"
+        name = "saasentialcore"
     return logging.getLogger(name)
 
 

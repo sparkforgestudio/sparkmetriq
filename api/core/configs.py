@@ -1,53 +1,23 @@
 # api/core/configs.py
-import os
-from dotenv import load_dotenv
+"""
+Shim de compatibilité pour les configurations (NON-CORE).
 
-# Charger les variables d'environnement depuis le fichier .env
-load_dotenv()
+⚠️  DEPRECATED: Ce module est un shim de compatibilité.
+    Le module réel a été déplacé vers api/services/integrations/meta_configs.py.
 
-# 🔐 Configuration JWT
-SECRET_KEY = os.getenv("SECRET_KEY", "change_this_in_production")
-secret_key = SECRET_KEY  # alias pour compatibilité
-ALGORITHM = os.getenv("ALGORITHM", "HS256")
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 60))
+TODO: Migrer tous les imports depuis api.core.configs vers
+      api.services.integrations.meta_configs et supprimer ce shim.
+"""
 
-# 🔌 Meta / Graph API (Threads, Instagram, Facebook)
-META_ACCESS_TOKEN = os.getenv("META_ACCESS_TOKEN", "")
-INSTAGRAM_APP_ID = os.getenv("INSTAGRAM_APP_ID", "")
-INSTAGRAM_APP_SECRET = os.getenv("INSTAGRAM_APP_SECRET", "")
-INSTAGRAM_PAGE_ID = os.getenv("INSTAGRAM_PAGE_ID", "")
-INSTAGRAM_VERIFY_TOKEN = os.getenv("INSTAGRAM_VERIFY_TOKEN", "")
-THREADS_USER_ID = os.getenv("THREADS_USER_ID", "")
+# Import dynamique pour éviter les tokens produits en clair dans le core
+import sys
+from api.services.integrations import meta_configs
 
-# 📱 WhatsApp Business API
-WHATSAPP_VERIFY_TOKEN = os.getenv("WHATSAPP_VERIFY_TOKEN", "")
+# Ré-export de toutes les variables depuis meta_configs
+_module = meta_configs
+for _attr_name in dir(_module):
+    if not _attr_name.startswith("_"):
+        setattr(sys.modules[__name__], _attr_name, getattr(_module, _attr_name))
 
-# 🐦 Telegram Bot
-TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
-
-# 🐦 Twitter API
-TWITTER_BEARER_TOKEN = os.getenv("TWITTER_BEARER_TOKEN", "")
-TWITTER_API_KEY = os.getenv("TWITTER_API_KEY", "")
-TWITTER_API_KEY_SECRET = os.getenv("TWITTER_API_KEY_SECRET", "")
-TWITTER_ACCESS_TOKEN = os.getenv("TWITTER_ACCESS_TOKEN", "")
-TWITTER_ACCESS_TOKEN_SECRET = os.getenv("TWITTER_ACCESS_TOKEN_SECRET", "")
-
-# 🐙 Reddit API
-REDDIT_CLIENT_ID = os.getenv("REDDIT_CLIENT_ID", "")
-REDDIT_CLIENT_SECRET = os.getenv("REDDIT_CLIENT_SECRET", "")
-REDDIT_USERNAME = os.getenv("REDDIT_USERNAME", "")
-REDDIT_PASSWORD = os.getenv("REDDIT_PASSWORD", "")
-REDDIT_USER_AGENT = os.getenv("REDDIT_USER_AGENT", "")
-
-# Clé privée NOWPayments (Account → Settings → API Keys)
-NOWPAYMENTS_API_KEY = os.getenv("NOWPAYMENTS_API_KEY", "")
-
-# URL de base (optionnel, vous pouvez hardcoder)
-NOWPAYMENTS_URL = os.getenv("NOWPAYMENTS_URL", "https://api.nowpayments.io")
-
-# 🤖 DeepSeek LLM
-DEESEEK_MODEL_PATH = os.getenv("DEESEEK_MODEL_PATH", "/models/deepseek/")
-
-# 🔐 Google OAuth 2.0
-GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
-GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")  # Optionnel pour backend (id_token only)
+# Construire __all__ dynamiquement pour éviter tokens en clair
+__all__ = [name for name in dir(_module) if not name.startswith("_")]

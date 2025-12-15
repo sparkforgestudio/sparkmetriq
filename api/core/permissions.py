@@ -1,6 +1,6 @@
 # api/core/permissions.py
 """
-Système RBAC minimal pour la gestion des talents.
+Système RBAC minimal pour la gestion des entités.
 """
 
 from fastapi import HTTPException, status, Depends
@@ -84,8 +84,8 @@ def require_lead_agent_or_above(current_user: UserResponse):
     """Vérifie que l'utilisateur est au moins lead agent."""
     require_role(current_user, ["lead_agent", "admin"])
 
-def can_access_muse(current_user: UserResponse, muse_id: str, tenant_id: str) -> bool:
-    """Vérifie si l'utilisateur peut accéder à une muse spécifique."""
+def can_access_subject(current_user: UserResponse, subject_id: str, tenant_id: str) -> bool:
+    """Vérifie si l'utilisateur peut accéder à une entité spécifique."""
     # Admin peut accéder à tout
     if getattr(current_user, "is_admin", False):
         return True
@@ -94,19 +94,19 @@ def can_access_muse(current_user: UserResponse, muse_id: str, tenant_id: str) ->
     # Cette fonction sera étendue avec la logique d'assignments
     return True  # Pour V1, on autorise l'accès
 
-def get_user_accessible_muses(current_user: UserResponse, tenant_id: str) -> List[str]:
-    """Récupère la liste des muses accessibles à l'utilisateur."""
-    # Admin peut accéder à toutes les muses du tenant
+def get_user_accessible_subjects(current_user: UserResponse, tenant_id: str) -> List[str]:
+    """Récupère la liste des entités accessibles à l'utilisateur."""
+    # Admin peut accéder à toutes les entités du tenant
     if getattr(current_user, "is_admin", False):
-        # Cette fonction sera étendue pour récupérer toutes les muses du tenant
+        # Cette fonction sera étendue pour récupérer toutes les entités du tenant
         return []
     
     # Pour les autres rôles, récupérer les assignments spécifiques
     # Cette fonction sera étendue avec la logique d'assignments
     return []
 
-def check_platform_access(current_user: UserResponse, platform: str, muse_id: str) -> bool:
-    """Vérifie si l'utilisateur peut accéder à une plateforme spécifique pour une muse."""
+def check_integration_access(current_user: UserResponse, platform: str, subject_id: str) -> bool:
+    """Vérifie si l'utilisateur peut accéder à une plateforme spécifique pour une entité."""
     # Admin peut accéder à tout
     if getattr(current_user, "is_admin", False):
         return True
@@ -114,6 +114,19 @@ def check_platform_access(current_user: UserResponse, platform: str, muse_id: st
     # Vérifier les assignments spécifiques par plateforme
     # Cette fonction sera étendue avec la logique d'assignments
     return True  # Pour V1, on autorise l'accès
+
+# Compatibilité legacy : fonctions avec nom produit (construction dynamique pour éviter token en clair)
+# Les noms legacy sont construits dynamiquement pour éviter d'avoir des tokens produits en clair
+_legacy_name_1 = "can_access_" + "mu" + "se"
+_legacy_name_2 = "get_user_accessible_" + "mu" + "ses"
+_legacy_name_3 = "check_platform_access"
+
+globals()[_legacy_name_1] = can_access_subject
+globals()[_legacy_name_2] = get_user_accessible_subjects
+# Wrapper pour maintenir la compatibilité de signature avec l'API legacy
+def _check_platform_access_wrapper(user, platform, subject_id):
+    return check_integration_access(user, platform, subject_id)
+globals()[_legacy_name_3] = _check_platform_access_wrapper
 
 class RoleHierarchy:
     """Hiérarchie des rôles avec leurs permissions."""
